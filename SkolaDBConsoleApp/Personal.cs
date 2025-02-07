@@ -13,6 +13,8 @@ namespace SkolaDBConsoleApp.Models
         public string Förnamn { get; set; }
         public string Efternamn { get; set; }
         public string Befattning { get; set; }
+        public string Avdelning { get; set; }
+
 
         public ICollection<Klasser> Klassers { get; set; }
         public ICollection<Betyg> Betygs { get; set; }

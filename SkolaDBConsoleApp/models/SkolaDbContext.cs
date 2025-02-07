@@ -112,6 +112,9 @@ namespace SkolaDBConsoleApp
                 entity.Property(e => e.Förnamn)
                     .HasMaxLength(50)
                     .HasColumnName("förnamn");
+                entity.Property(e => e.Avdelning)
+                    .HasMaxLength(50)
+                    .HasColumnName("avdelning");
             });
 
             modelBuilder.Entity<Ämnen>(entity =>
