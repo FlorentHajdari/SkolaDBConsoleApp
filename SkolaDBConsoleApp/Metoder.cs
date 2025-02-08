@@ -128,7 +128,7 @@ namespace SkolaDBConsoleApp
                 {
                     while (reader.Read())
                     {
-                        Console.WriteLine($"{reader["Förnam"]} {reader["Efternamn"]} - Befattning: {reader["Befattning"]} - År: {reader["År"]}");
+                        Console.WriteLine($"{reader["Förnamn"]} {reader["Efternamn"]} - Befattning: {reader["Befattning"]} - År: {reader["År"]}");
                     }
                 }
             }
