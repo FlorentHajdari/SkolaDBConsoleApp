@@ -73,6 +73,11 @@ namespace SkolaDBConsoleApp
                 entity.Property(e => e.Personnummer)
                     .HasMaxLength(15)
                     .HasColumnName("personnummer");
+                entity.Property(e => e.Längd)
+                .HasColumnName("längd");
+                entity.Property(e => e.Vikt)
+               .HasColumnName("vikt");
+
 
                 entity.HasOne(d => d.KlassNavigation).WithMany(p => p.Elevers)
                     .HasForeignKey(d => d.Klass)

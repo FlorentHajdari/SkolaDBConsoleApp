@@ -14,6 +14,8 @@ namespace SkolaDBConsoleApp.Models
         public string Efternamn { get; set; }
         public string Personnummer { get; set; }
         public int Klass { get; set; }
+        public decimal Längd { get; set; }
+        public decimal Vikt { get; set; }
 
         public Klasser KlassNavigation { get; set; }
         public ICollection<Betyg> Betygs { get; set; }

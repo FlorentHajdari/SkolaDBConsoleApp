@@ -20,7 +20,7 @@ namespace SkolaDBConsoleApp
                 Console.WriteLine("3. Lägga till ny personal");
                 Console.WriteLine("4. Visa alla aktiva kurser");
                 Console.WriteLine("5. Visa antal lärare per avdelning");
-                Console.WriteLine("6. Visa information om alla elever");
+                Console.WriteLine("6. Visa detalj-information om samtliga elever");
                 Console.WriteLine("7. Visa information om all personal");
                 Console.WriteLine("8. Visa alla betyg för en enskild elev");
                 Console.WriteLine("9. Visa lönekostander för respektive avdelning");
@@ -55,11 +55,7 @@ namespace SkolaDBConsoleApp
                         metoder.GetStaffByDepartment();
                         break;
                     case "6":
-                        Console.WriteLine("Vill du sortera på förnamn eller efternamn? (Mata in 'förnamn' alternativ 'efternamn')");
-                        sortBy = Console.ReadLine();
-                        Console.WriteLine("Vill du ha sorteringen från A-Ö eller Ö-A? (Mata in 'stigande' eller 'fallande')");
-                        sortOrder = Console.ReadLine();
-                        metoder.GetAllStudents(sortBy, sortOrder);
+                        metoder.GetAllStudentDetails();
                         break;
                     case "7":
                         metoder.GetAllStaffOverview();

@@ -37,6 +37,7 @@ namespace SkolaDBConsoleApp
                     Console.WriteLine($"{student.Förnamn} {student.Efternamn} - Klass: {student.KlassNavigation.Namn}");
                 }
             }
+
         }
 
         public void GetStudentsByClass()
@@ -58,11 +59,14 @@ namespace SkolaDBConsoleApp
                     Console.WriteLine($"{student.Förnamn} {student.Efternamn} - Klass: {student.KlassNavigation.Namn}");
                 }
             }
+            ConsoleCleaner();
+
         }
 
         public void AddNewStaff()
         {
-            using (var context = new SkolaDbContext())
+            var connectionString = "Host=localhost;Port=5432;Database=SkolaDB;Username=postgres;Password=Fotboll1;";
+            using (var connection = new NpgsqlConnection(connectionString))
             {
                 Console.WriteLine("Ange förnamn: ");
                 var firstName = Console.ReadLine();
@@ -70,19 +74,20 @@ namespace SkolaDBConsoleApp
                 var lastName = Console.ReadLine();
                 Console.WriteLine("Ange befattning: ");
                 var position = Console.ReadLine();
+                Console.WriteLine("Ange antalet års erfarenhet på skolan: ");
+                var Experience = int.Parse(Console.ReadLine());
 
-                var newStaff = new Personal
-                {
-                    Förnamn = firstName,
-                    Efternamn = lastName,
-                    Befattning = position
-                };
+                var command = new NpgsqlCommand("INSERT INTO personal (Förnamn, Efternamn, Befattning, ArbetadeÅr) VALUES (@Förnamn, @Efternamn, @Befattning, @ArbetadeÅr)", connection);
+                command.Parameters.AddWithValue("@Förnamn", firstName);
+                command.Parameters.AddWithValue("@Efternamn", lastName);
+                command.Parameters.AddWithValue("@Befattning", position);
+                command.Parameters.AddWithValue("@ArbetadeÅr", Experience);
 
-                context.Personals.Add(newStaff);
-                context.SaveChanges();
-
+                command.ExecuteNonQuery();
                 Console.WriteLine("Ny personal är tillagd! ");
             }
+            ConsoleCleaner();
+
         }
 
         public void GetAllActiveCourses()
@@ -96,6 +101,8 @@ namespace SkolaDBConsoleApp
                     Console.WriteLine($"Kurs: {course.Namn}");
                 }
             }
+            ConsoleCleaner();
+
         }
 
         public void GetStaffByDepartment()
@@ -115,6 +122,8 @@ namespace SkolaDBConsoleApp
                     Console.WriteLine($"Avdelning: {item.Department}, Antal: {item.StaffCount}");
                 }
             }
+            ConsoleCleaner();
+
         }
 
         public void GetAllStaffOverview()
@@ -123,15 +132,17 @@ namespace SkolaDBConsoleApp
             using (var connection = new NpgsqlConnection(connectionString))
             {
                 connection.Open();
-                var command = new NpgsqlCommand("SELECT Förnamn, Efternamn, Befattning, (EXTRACT(YEAR FROM AGE(NOW(), Anställningsdatum))) AS År FROM personal", connection);
+                var command = new NpgsqlCommand("SELECT Förnamn, Efternamn, Befattning, ArbetadeÅr FROM personal", connection);
                 using (var reader = command.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        Console.WriteLine($"{reader["Förnamn"]} {reader["Efternamn"]} - Befattning: {reader["Befattning"]} - År: {reader["År"]}");
+                        Console.WriteLine($"{reader["Förnamn"]} {reader["Efternamn"]} - Befattning: {reader["Befattning"]} - År: {reader["ArbetadeÅr"]}");
                     }
                 }
             }
+            ConsoleCleaner();
+
         }
 
         public void GetGradesForStudent()
@@ -152,6 +163,8 @@ namespace SkolaDBConsoleApp
                     }
                 }
             }
+            ConsoleCleaner();
+
         }
 
         public void GetDepartmentSalaryCosts()
@@ -169,6 +182,8 @@ namespace SkolaDBConsoleApp
                     }
                 }
             }
+            ConsoleCleaner();
+
         }
 
         public void GetAverageSalariesByDepartment()
@@ -186,6 +201,8 @@ namespace SkolaDBConsoleApp
                     }
                 }
             }
+            ConsoleCleaner();
+
         }
 
         public void SetGradeWithTransaction()
@@ -228,6 +245,8 @@ namespace SkolaDBConsoleApp
                     }
                 }
             }
+            ConsoleCleaner();
+
         }
 
         public void GetStudentInfoById()
@@ -248,6 +267,32 @@ namespace SkolaDBConsoleApp
                     }
                 }
             }
+            ConsoleCleaner();
+
+        }
+
+        public void GetAllStudentDetails()
+        {
+            using (var context = new SkolaDbContext())
+            {
+                var students = context.Elevers
+                    .Include(e => e.KlassNavigation)
+                    .ToList();
+
+                foreach (var student in students)
+                {
+                    Console.WriteLine($"Förnamn: {student.Förnamn}, Efternamn: {student.Efternamn}, Klass: {student.KlassNavigation.Namn}, Personnummer: {student.Personnummer}, Längd: {student.Längd}, Vikt: {student.Vikt}");
+                }
+            }
+            ConsoleCleaner();
+
+        }
+
+        public void ConsoleCleaner()
+        {
+            Console.WriteLine("\nTryck på valfri tangent för att fortsätta...");
+            Console.ReadKey();
+            Console.Clear();
         }
     }
 }
