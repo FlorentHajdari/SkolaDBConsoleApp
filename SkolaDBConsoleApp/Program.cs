@@ -64,7 +64,7 @@ namespace SkolaDBConsoleApp
                         metoder.GetGradesForStudent();
                         break;
                     case "9":
-                        metoder.GetDepartmentSalaryCosts();
+                        metoder.GetTotalSalaryByDepartment();
                         break;
                     case "10":
                         metoder.GetAverageSalariesByDepartment();

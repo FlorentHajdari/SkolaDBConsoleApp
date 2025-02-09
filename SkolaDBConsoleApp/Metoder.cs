@@ -74,14 +74,21 @@ namespace SkolaDBConsoleApp
                 var lastName = Console.ReadLine();
                 Console.WriteLine("Ange befattning: ");
                 var position = Console.ReadLine();
+                Console.WriteLine("Ange avdelning: ");
+                var department = Console.ReadLine();
                 Console.WriteLine("Ange antalet års erfarenhet på skolan: ");
                 var Experience = int.Parse(Console.ReadLine());
+                Console.WriteLine("Ange månadslön: ");
+                var salary = decimal.Parse(Console.ReadLine());
 
-                var command = new NpgsqlCommand("INSERT INTO personal (Förnamn, Efternamn, Befattning, ArbetadeÅr) VALUES (@Förnamn, @Efternamn, @Befattning, @ArbetadeÅr)", connection);
+                var command = new NpgsqlCommand(
+                    @"INSERT INTO personal (Förnamn, Efternamn, Befattning, Avdelning, ArbetadeÅr, Månadslön) VALUES (@Förnamn, @Efternamn, @Befattning, @ArbetadeÅr, @Måndadslön)", connection);
                 command.Parameters.AddWithValue("@Förnamn", firstName);
                 command.Parameters.AddWithValue("@Efternamn", lastName);
                 command.Parameters.AddWithValue("@Befattning", position);
+                command.Parameters.AddWithValue("@Avdelning", department);
                 command.Parameters.AddWithValue("@ArbetadeÅr", Experience);
+                command.Parameters.AddWithValue("@Måndadslön", salary);
 
                 command.ExecuteNonQuery();
                 Console.WriteLine("Ny personal är tillagd! ");
@@ -152,14 +159,38 @@ namespace SkolaDBConsoleApp
             {
                 connection.Open();
                 Console.WriteLine("Ange elevens ID: ");
-                var studentID = Console.ReadLine();
-                var command = new NpgsqlCommand("SELECT * FROM betyg WHERE elev = @elevId", connection);
+
+                if (!int.TryParse(Console.ReadLine(), out int studentID))
+                {
+                    Console.WriteLine("ERROR. Ange ett giltigt ID som är ett heltal: ");
+                    return;
+                }
+                var command = new NpgsqlCommand(
+                    @"SELECT
+                     e.förnamn || ' ' || e.efternamn AS elev_namn,
+                     äm.namn AS ämne,
+                     b.betyg,
+                     b.datum,
+                     p.förnamn || ' ' || p.efternamn AS lärare_namn
+                     FROM
+                     public.betyg b
+                     JOIN
+                     public.elever e ON b.elev = e.id
+                     JOIN
+                     public.""Ämnen"" äm ON b.""Ämne"" = äm.id
+                     JOIN
+                     public.personal p ON b.""lärare"" = p.id
+                     WHERE
+                     e.id = @elevId
+                     ORDER BY
+                     b.datum DESC;", connection);
+
                 command.Parameters.AddWithValue("@elevId", studentID);
                 using (var reader = command.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        Console.WriteLine($"Betyg: {reader["betyg"]}, Ämne: {reader["ämne"]}, Datum: {reader["datum"]}, Lärare: {reader["lärare"]}");
+                        Console.WriteLine($"Elev: {reader["elev_namn"]}, Ämne: {reader["ämne"]}, Betyg: {reader["betyg"]}, Datum: {reader["datum"]}, Lärare: {reader["lärare_namn"]}");
                     }
                 }
             }
@@ -167,24 +198,7 @@ namespace SkolaDBConsoleApp
 
         }
 
-        public void GetDepartmentSalaryCosts()
-        {
-            var connectionString = "Host=localhost;Port=5432;Database=SkolaDB;Username=postgres;Password=Fotboll1;";
-            using (var connection = new NpgsqlConnection(connectionString))
-            {
-                connection.Open();
-                var command = new NpgsqlCommand("SELECT befattning, SUM(lön) AS TotalLön FROM personal GROUP BY befattning", connection);
-                using (var reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        Console.WriteLine($"Befattning: {reader["befattning"]}, Total Lön: {reader["TotalLön"]}");
-                    }
-                }
-            }
-            ConsoleCleaner();
-
-        }
+   
 
         public void GetAverageSalariesByDepartment()
         {
@@ -192,12 +206,12 @@ namespace SkolaDBConsoleApp
             using (var connection = new NpgsqlConnection(connectionString))
             {
                 connection.Open();
-                var command = new NpgsqlCommand("SELECT befattning, ABG(lön) AS Medellön FROM personal GROUP BY befattning", connection);
+                var command = new NpgsqlCommand("SELECT avdelning, AVG(månadslön) AS Medellön FROM public.personal GROUP BY avdelning", connection);
                 using (var reader = command.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        Console.WriteLine($"Befattning: {reader["befattning"]}, Medellön: {reader["Medellön"]}");
+                        Console.WriteLine($"Avdelning: {reader["avdelning"]}, Medellön: {reader["medellön"]}");
                     }
                 }
             }
@@ -256,14 +270,25 @@ namespace SkolaDBConsoleApp
             {
                 connection.Open();
                 Console.WriteLine("Ange elevens ID: ");
-                var studentID = int.Parse(Console.ReadLine());
-                var command = new NpgsqlCommand("SELECT * FROM GetStudentInfoById(@elevId)", connection);
+
+                if (!int.TryParse(Console.ReadLine(), out int studentID))
+                {
+                    Console.WriteLine("ERROR. Ange ett giltigt ID som är ett heltal. ");
+                    return;
+                }
+
+                var command = new NpgsqlCommand("SELECT * FROM GetStudentInfoById(@elevId);", connection);
                 command.Parameters.AddWithValue("@elevId", studentID);
                 using (var reader = command.ExecuteReader())
                 {
+                    if (!reader.HasRows)
+                    {
+                        Console.WriteLine("Ingen elev matchade med ditt angivna ID. ");
+                        return;
+                    }
                     while (reader.Read())
                     {
-                        Console.WriteLine($"Förnamn: {reader["Förnamn"]}, Efternamn: {reader["Efternamn"]}, Klass: {reader["Klass"]}, Personnummer: {reader["Personnummer"]}");
+                        Console.WriteLine($"Förnamn: {reader["förnamn"]}, Efternamn: {reader["efternamn"]}, Klass: {reader["klass"]}, Personnummer: {reader["personnummer"]}");
                     }
                 }
             }
@@ -293,6 +318,29 @@ namespace SkolaDBConsoleApp
             Console.WriteLine("\nTryck på valfri tangent för att fortsätta...");
             Console.ReadKey();
             Console.Clear();
+        }
+
+        public void GetTotalSalaryByDepartment()
+        {
+            var connectionString = "Host=localhost;Port=5432;Database=SkolaDB;Username=postgres;Password=Fotboll1;";
+            using (var connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+
+                var command = new NpgsqlCommand(
+                    @"SELECT avdelning, SUM(månadslön) AS total_månadslön
+                      FROM public.personal
+                      GROUP BY avdelning;", connection);
+
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        Console.WriteLine($"Avdelning: {reader["avdelning"]} - Totala måndadslöner: {reader["total_månadslön"]}");
+                    }
+                }
+            }
+            ConsoleCleaner();
         }
     }
 }
