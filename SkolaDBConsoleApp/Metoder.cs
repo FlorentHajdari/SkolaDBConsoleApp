@@ -10,32 +10,39 @@ namespace SkolaDBConsoleApp
     {
         public void GetAllStudents(string sortBy, string sortOrder)
         {
-            using (var context = new SkolaDbContext())
+            try
             {
-                IQueryable<Elever> students = context.Elevers;
+                using (var context = new SkolaDbContext())
+                {
+                    IQueryable<Elever> students = context.Elevers;
 
-                if (sortBy.ToLower() == "förnamn")
-                {
-                    students = sortOrder.ToLower() == "stigande"
-                    ? students.OrderBy(e => e.Förnamn)
-                    : students.OrderByDescending(e => e.Förnamn);
-                }
-                else if (sortBy.ToLower() == "efternamn")
-                {
-                    students = sortOrder.ToLower() == "stigande"
-                        ? students.OrderBy(e => e.Efternamn)
-                        : students.OrderByDescending(e => e.Efternamn);
-                }
-                else
-                {
-                    Console.WriteLine("Ogiltigt val. Visar därför en osorterad lista av eleverna. ");
-                }
-                var studentList = students.Include(e => e.KlassNavigation).ToList();
+                    if (sortBy.ToLower() == "förnamn")
+                    {
+                        students = sortOrder.ToLower() == "stigande"
+                        ? students.OrderBy(e => e.Förnamn)
+                        : students.OrderByDescending(e => e.Förnamn);
+                    }
+                    else if (sortBy.ToLower() == "efternamn")
+                    {
+                        students = sortOrder.ToLower() == "stigande"
+                            ? students.OrderBy(e => e.Efternamn)
+                            : students.OrderByDescending(e => e.Efternamn);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Ogiltigt val. Visar därför en osorterad lista av eleverna. ");
+                    }
+                    var studentList = students.Include(e => e.KlassNavigation).ToList();
 
-                foreach (var student in studentList)
-                {
-                    Console.WriteLine($"{student.Förnamn} {student.Efternamn} - Klass: {student.KlassNavigation.Namn}");
+                    foreach (var student in studentList)
+                    {
+                        Console.WriteLine($"{student.Förnamn} {student.Efternamn} - Klass: {student.KlassNavigation.Namn}");
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ett fel uppstod: {ex.Message}");
             }
 
         }
@@ -158,6 +165,7 @@ namespace SkolaDBConsoleApp
             using (var connection = new NpgsqlConnection(connectionString))
             {
                 connection.Open();
+
                 Console.WriteLine("Ange elevens ID: ");
 
                 if (!int.TryParse(Console.ReadLine(), out int studentID))
@@ -230,25 +238,51 @@ namespace SkolaDBConsoleApp
                     try
                     {
                         Console.WriteLine("Ange elevens ID: ");
-                        var studentId = Console.ReadLine();
+                        if  (!int.TryParse(Console.ReadLine(), out int studentId))
+                        {
+                            Console.WriteLine("Ej godtagbart elev-ID. Ange ett heltal: ");
+                            return;
+                        }
                         Console.WriteLine("Ange ämnets ID: ");
-                        var subjectId = Console.ReadLine();
-                        Console.WriteLine("Ange betyget: ");
-                        var grade = Console.ReadLine();
+                        if (!int.TryParse(Console.ReadLine(), out int subjectId))
+                        {
+                            Console.WriteLine("Ej godtagbart ämnes-ID. Ange ett heltal: ");
+                            return;
+                        }
+                        Console.WriteLine("Ange betyget (A-F): ");
+                        var grade = Console.ReadLine()?.Trim().ToUpper();
+                        if (string.IsNullOrEmpty(grade) || !"ABCDEF".Contains(grade))
+                        {
+                            Console.WriteLine("Fel typ av betyg satt. Ange en bokstav mellan A till F. ");
+                            return;
+                        }
                         Console.WriteLine("Ange lärarens ID: ");
-                        var teacherId = Console.ReadLine();
+                        if (!int.TryParse(Console.ReadLine(), out int teacherId))
+                        {
+                            Console.WriteLine("Ej godtagbart lärar-ID. Ange ett heltal: ");
+                            return;
+                        }
                         Console.WriteLine("Ange datum (YYYY-MM-DD): ");
-                        var date = Console.ReadLine();
+                        if (!DateTime.TryParse(Console.ReadLine(), out DateTime date))
+                        {
+                            Console.WriteLine("Felaktigt format på datum. Ange datum i detta format YYYY-MM-DD.) ");
+                            return;
+                        }
 
-                        var command = new NpgsqlCommand("INSERT INTO betyg (elev, ämne, betyg, lärare, datum) VALUES (@elev, @ämne, @betyg, @lärare, @datum)", connection);
-                        command.Parameters.AddWithValue("@elev", studentId);
-                        command.Parameters.AddWithValue("@ämne", subjectId);
-                        command.Parameters.AddWithValue("@betyg", grade);
-                        command.Parameters.AddWithValue("@lärare", teacherId);
-                        command.Parameters.AddWithValue("@datum", date);
+                        using (var command = new NpgsqlCommand(
+                            "INSERT INTO betyg (elev, \"Ämne\", betyg, \"lärare\", datum) VALUES (@elev, @ämne, @betyg, @lärare, @datum)",
+                            connection))
+                        {
+                            command.Parameters.AddWithValue("@elev", studentId);
+                            command.Parameters.AddWithValue("@ämne", subjectId);
+                            command.Parameters.AddWithValue("@betyg", grade);
+                            command.Parameters.AddWithValue("@lärare", teacherId);
+                            command.Parameters.AddWithValue("@datum", date);
 
-                        command.Transaction = transaction;
-                        command.ExecuteNonQuery();
+                            command.Transaction = transaction;
+                            command.ExecuteNonQuery();
+                        }
+
                         transaction.Commit();
                         Console.WriteLine("Betyget sattes dit lätt som en plätt! ");
                     }
@@ -279,6 +313,7 @@ namespace SkolaDBConsoleApp
 
                 var command = new NpgsqlCommand("SELECT * FROM GetStudentInfoById(@elevId);", connection);
                 command.Parameters.AddWithValue("@elevId", studentID);
+
                 using (var reader = command.ExecuteReader())
                 {
                     if (!reader.HasRows)
@@ -288,7 +323,7 @@ namespace SkolaDBConsoleApp
                     }
                     while (reader.Read())
                     {
-                        Console.WriteLine($"Förnamn: {reader["förnamn"]}, Efternamn: {reader["efternamn"]}, Klass: {reader["klass"]}, Personnummer: {reader["personnummer"]}");
+                        Console.WriteLine($"Förnamn: {reader["förnamn"]}, Efternamn: {reader["efternamn"]}, Klass: {reader["klass"]}, Personnummer: {reader["personnummer"]}, Längd (cm): {reader["längd"]}, Vikt (kg): {reader["vikt"]}");
                     }
                 }
             }
